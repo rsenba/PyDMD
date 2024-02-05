@@ -1,3 +1,36 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Tutorial 8 : Comparison of various DMD algorithms
+#
+# In this tutorial, we perform a thorough comparison of various DMD algorithms available in PyDMD, namely:
+# - the original DMD algorithm proposed by [Schmid (*J. Fluid Mech.*, 2010)](https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/dynamic-mode-decomposition-of-numerical-and-experimental-data/AA4C763B525515AD4521A6CC5E10DBD4), see `DMD`
+# - the optimal closed-form solution given by [Héas & Herzet (*arXiv*, 2016)](https://arxiv.org/abs/1610.02962), see `OptDMD`.
+#
+# For that purpose, different test cases are considered in order to assess the accuracy, the computational efficiency and the generalization capabilities of each method. The system we'll consider throughout this notebook is that of a chain of slightly damped 1D harmonic oscillators with nearest-neighbours coupling. Defining the state-vector as
+#
+# $$
+#     \mathbf{x} = \begin{bmatrix} \mathbf{q} & \mathbf{p} \end{bmatrix}^T,
+# $$
+#
+# where $\mathbf{q}$ is the position and $\mathbf{p}$ is the momentum, our linear system can be written as
+#
+# $$
+#     \displaystyle \frac{\mathrm{d}}{\mathrm{d}t} \begin{bmatrix} \mathbf{q} \\ \mathbf{p} \end{bmatrix} = \begin{bmatrix} \mathbf{0} & \mathbf{I} \\ -\mathbf{K} & -\mathbf{G} \end{bmatrix} \begin{bmatrix} \mathbf{q} \\ \mathbf{p} \end{bmatrix},
+# $$
+#
+# with $\mathbf{K}$ and $\mathbf{G}$ being the stiffness and friction matrices, respectively. It must be emphasized that, because we consider $N=50$ identifical oscillators, this system does not exhibit low-rank dynamics. It will nonetheless enable us to further highlight the benefits of using the optimal solution proposed by [Héas & Herzet (arXiv, 2016)](https://arxiv.org/abs/1610.02962) as opposed to the other algorithms previously available in PyDMD.
+#
+# Three different test cases will be considered :
+# - fitting a DMD model using a single long time-series,
+# - fitting a DMD model using a short burst,
+# - fitting a DMD model using an ensemble of short bursts.
+#
+# For each case, the reconstruction error on the training dataset used to fit the model will be reported along with the error on an ensemble of testing datasets as to assess the generalization capabilities of these various DMD models. The following two cells build the discrete linear time invariant (LTI) state space model for our system. It is this particular system, hereafter denoted `dsys`, that will be used throughout this notebook to generate both the training and testing datasets. For more details about SciPy implementation of LTI systems, interested readers are refered to the [`scipy.signal`](https://docs.scipy.org/doc/scipy/reference/signal.html#discrete-time-linear-systems) module.
+
+# In[1]:
+
+
 # Import standard functions from numpy.
 import numpy as np
 from numpy.random import normal
@@ -16,6 +49,9 @@ from scipy.linalg import norm
 
 # Import various DMD algorithms available in PyDMD.
 from pydmd import DMD, OptDMD
+
+
+# In[2]:
 
 
 def harmonic_oscillators(N=10, omega=0.1, alpha=0.2, gamma=0.05, dt=1.0):
@@ -80,15 +116,27 @@ def harmonic_oscillators(N=10, omega=0.1, alpha=0.2, gamma=0.05, dt=1.0):
     return sys.to_discrete(dt)
 
 
+# In[3]:
+
+
 # Get the discrete-time LTI model.
 N = 50  # Number of oscillators (each has 2 degrees of freedom so the total size of the system is 2N).
 dsys = harmonic_oscillators(N=N)  # Build the model.
+
+
+# ## Case 1 : Using a single long time-series to fit a DMD model
+
+# In[4]:
+
 
 # Training initial condition.
 x0_train = normal(loc=0.0, scale=1.0, size=(dsys.A.shape[1]))
 
 # Run simulation to generate dataset.
 t, _, x_train = dlsim(dsys, np.zeros((2000, dsys.inputs)), x0=x0_train)
+
+
+# In[5]:
 
 
 def plot_training_dataset(t, x_train):
@@ -120,13 +168,20 @@ def plot_training_dataset(t, x_train):
     axes[1].plot(t, x_train[:, dsys.inputs :], alpha=0.5)
 
     # Add decorators.
-    axes[1].set(xlim=(t.min(), t.max()), xlabel=r"k", ylabel=r"$p_i[k]$")
+    axes[1].set(xlim=(t.min(), t.max()), xlabel=r"k", ylabel=r"p_i[k]$")
 
     return
 
 
+# In[6]:
+
+
 plot_training_dataset(t, x_train)
-plt.show()
+
+
+# Let us now fit our models, namely vanilla DMD (Schmid, *J. Fluid Mech.*, 2010) and the closed-form solution DMD (Héas & Herzet, *arXiv*, 2016).
+
+# In[7]:
 
 
 def rank_sensitvity(dsys, x_train, n_test=100):
@@ -169,7 +224,7 @@ def rank_sensitvity(dsys, x_train, n_test=100):
     dmd_train_error, optdmd_train_error = list(), list()
     dmd_test_error, optdmd_test_error = list(), list()
 
-    #  Split the training data into input/output snapshots.
+    # Split the training data into input/output snapshots.
     y_train, X_train = x_train[:, 1:], x_train[:, :-1]
 
     for rank in range(1, dsys.A.shape[0] + 1):
@@ -226,6 +281,9 @@ def rank_sensitvity(dsys, x_train, n_test=100):
     )
 
 
+# In[8]:
+
+
 def plot_rank_sensitivity(
     dmd_train_error, dmd_test_error, optdmd_train_error, optdmd_test_error
 ):
@@ -259,7 +317,7 @@ def plot_rank_sensitivity(
     rank = np.arange(1, dmd_test_error.shape[0] + 1)
 
     #####
-    #         TRAINING ERROR
+    #####    TRAINING ERROR
     #####
 
     # Plot the vanilla DMD error.
@@ -275,7 +333,7 @@ def plot_rank_sensitivity(
     axes[0].grid(True)
 
     #####
-    #         TESTING ERROR
+    #####     TESTING ERROR
     #####
 
     # Plot the vanilla DMD error.
@@ -309,6 +367,9 @@ def plot_rank_sensitivity(
     return
 
 
+# In[9]:
+
+
 # Run the rank-sensitivity analysis.
 output = rank_sensitvity(dsys, x_train.T)
 
@@ -318,9 +379,18 @@ long_time_series_optdmd_train, long_time_series_optdmd_test = (
     output[3],
 )
 
+
+# In[10]:
+
+
 # Plot the results.
 plot_rank_sensitivity(*output)
-plt.show()
+
+
+# ## Case 2 : Using a short burst to fit a DMD model
+
+# In[11]:
+
 
 # Training initial condition.
 x0_train = normal(loc=0.0, scale=1.0, size=(dsys.A.shape[1]))
@@ -330,7 +400,10 @@ t, _, x_train = dlsim(dsys, np.zeros((100, dsys.inputs)), x0=x0_train)
 
 # Plot the corresponding training data.
 plot_training_dataset(t, x_train)
-plt.show()
+
+
+# In[12]:
+
 
 # Run the rank-sensitivity analysis.
 output = rank_sensitvity(dsys, x_train.T)
@@ -341,11 +414,17 @@ short_time_series_optdmd_train, short_time_series_optdmd_test = (
     output[3],
 )
 
+
+# In[13]:
+
+
 # Plot the results.
 plot_rank_sensitivity(*output)
-plt.show()
+
 
 # ## Case 3 : Fitting a DMD model using an ensemble of trajectories
+
+# In[14]:
 
 
 def generate_ensemble_time_series(dsys, n_traj, len_traj):
@@ -388,6 +467,9 @@ def generate_ensemble_time_series(dsys, n_traj, len_traj):
         else:
             X, Y = np.c_[X, x.T[:, :-1]], np.c_[Y, x.T[:, 1:]]
     return X, Y
+
+
+# In[15]:
 
 
 def rank_sensitvity_bis(dsys, X, Y, n_test=100):
@@ -436,6 +518,9 @@ def rank_sensitvity_bis(dsys, X, Y, n_test=100):
     return optdmd_train_error, optdmd_test_error
 
 
+# In[16]:
+
+
 def plot_rank_sensitivity_bis(
     short_time_series_optdmd_train,
     short_time_series_optdmd_test,
@@ -457,7 +542,7 @@ def plot_rank_sensitivity_bis(
     rank = np.arange(1, optdmd_train_error.shape[0] + 1)
 
     #####
-    #          TRAINING ERROR
+    #####     TRAINING ERROR
     #####
 
     # Training error using a short time-series to fit the model.
@@ -478,7 +563,7 @@ def plot_rank_sensitivity_bis(
     axes[0].grid(True)
 
     #####
-    #         TESTING ERROR
+    #####     TESTING ERROR
     #####
 
     # Testing error for the model fitted with a short time-series.
@@ -535,12 +620,19 @@ def plot_rank_sensitivity_bis(
 
 # ### Case 3.1 : Small ensemble
 
+# In[17]:
+
+
 # Number of trajectories and length.
 n_traj, len_traj = 10, 10
 X, Y = generate_ensemble_time_series(dsys, n_traj, len_traj)
 
 # Run the rank-sensitivity analysis.
 optdmd_train_error, optdmd_test_error = rank_sensitvity_bis(dsys, X, Y)
+
+
+# In[18]:
+
 
 plot_rank_sensitivity_bis(
     short_time_series_optdmd_train,
@@ -550,9 +642,12 @@ plot_rank_sensitivity_bis(
     optdmd_train_error,
     optdmd_test_error,
 )
-plt.show()
+
 
 # ### Case 3.2 : Large ensemble
+
+# In[19]:
+
 
 # Number of trajectories and length.
 n_traj, len_traj = 200, 10
@@ -561,6 +656,10 @@ X, Y = generate_ensemble_time_series(dsys, n_traj, len_traj)
 # Run the rank-sensitivity analysis.
 optdmd_train_error, optdmd_test_error = rank_sensitvity_bis(dsys, X, Y)
 
+
+# In[20]:
+
+
 plot_rank_sensitivity_bis(
     short_time_series_optdmd_train,
     short_time_series_optdmd_test,
@@ -569,7 +668,7 @@ plot_rank_sensitivity_bis(
     optdmd_train_error,
     optdmd_test_error,
 )
-plt.show()
+
 
 # ## Conclusion
 #

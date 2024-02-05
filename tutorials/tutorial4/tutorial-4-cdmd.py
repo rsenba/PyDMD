@@ -1,9 +1,18 @@
-# Tutorial 4: Compressed Dynamic Mode Decomposition
+#!/usr/bin/env python
+# coding: utf-8
+
+# # PyDMD
+
+# ## Tutorial 4: Compressed Dynamic Mode Decomposition
 
 # In this tutorial we will show the analysis and the reconstruction of a generic system using the compressed dynamic mode decomposition (cDMD). As a reference please follow [this work](https://doi.org/10.1007/s11554-016-0655-2) by Erichson, Brunton and Kutz. In this variation of the original algorithm, the snapshots matrix is compressed through a premultiplication by a proper matrix, and then the compressed matrix is decomposed.
 
 # First of all we import the CDMD and the DMD classes from the pydmd package, we set matplotlib for the notebook, we import numpy and the time package for some future benchmarks.
 
+# In[1]:
+
+
+get_ipython().run_line_magic("matplotlib", "inline")
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -17,6 +26,8 @@ from pydmd import DMD
 # - $f_1(x, t) = e^{\frac{-x^2}{5}}\,\cos(4x)\,e^{(2.3i)t}$
 # - $f_2(x, t) = (1-e^{1-\frac{x^2}{6}})e^{(1.3i)t}$
 # - $f_3(x, t) = (-\frac{x^2}{50} + 1)1.1i^{-2t}$
+
+# In[2]:
 
 
 def create_dataset(x_dim, t_dim):
@@ -42,6 +53,9 @@ def create_dataset(x_dim, t_dim):
 
 # The plot below represents the dataset.
 
+# In[3]:
+
+
 xgrid, tgrid, X = create_dataset(256, 128)
 plt.figure(figsize=(7, 7))
 plt.pcolor(xgrid, tgrid, X.real)
@@ -56,6 +70,9 @@ plt.show()
 #
 # It is sufficient to pass the right string when the new object is created to choose the matrix. Otherwise it is possible to use a custom matrix for the compression, as we show below.
 
+# In[4]:
+
+
 snapshots_matrix = X.T
 random_matrix = np.random.permutation(
     snapshots_matrix.shape[0] * snapshots_matrix.shape[1]
@@ -69,6 +86,9 @@ compression_matrix = random_matrix / np.linalg.norm(random_matrix)
 
 # We instantiate the `cDMD` matrix, passing as `compression_matrix` argument the matrix we created. The constructor is very similar to the `DMD` class, except to the compression matrix and the missing of the `exact` argument (in the compressed version, there is only one way to compute the modes). We plot the modes and the dynamics.
 
+# In[5]:
+
+
 cdmd = CDMD(svd_rank=3, compression_matrix=compression_matrix)
 cdmd.fit(snapshots_matrix)
 
@@ -81,6 +101,9 @@ plt.show()
 
 
 # In order to investigate about the reconstruction accuracy, we compare the results obtained with the cDMD and the standard DMD, respectively.
+
+# In[6]:
+
 
 dmd = DMD(svd_rank=3, exact=True)
 dmd.fit(snapshots_matrix)
@@ -104,6 +127,9 @@ plt.show()
 
 
 # The error using the compressed input is slightly greater, but the reconstruction looks very similar to the original input. So, why do we need the compressed algorithm instead of the original one? The snapshots matrix without compression has dimension *ndim $\times$ nsnapshots*, where *ndim* is the dimension of each snapshot and *nsnapshots* is the number of snapshots. The compressed snapshots matrix is instead a *nsnapshots $\times$ nsnapshots* matrix; so, over a useful noise reduction due to the compression, this version allows a faster computation. Let us measure it.
+
+# In[7]:
+
 
 time_dmd = []
 time_cdmd = []

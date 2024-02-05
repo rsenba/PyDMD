@@ -183,7 +183,7 @@ for eig in dmdc.eigs:
 
 # We seek a confirmation about this fact by computing the eigenvalues of the operator `A` which we used when we constructed the system, and we compare them with the eigenvalues of `dmd.atilde` which holds the approximation of `A` built by DMD with control.
 
-# In[14]:
+# In[13]:
 
 
 print(

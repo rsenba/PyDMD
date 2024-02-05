@@ -105,7 +105,7 @@ print("Shape after manipulation: {}".format(dmd.reconstructed_data.shape))
 
 # Now the cool trick: we combine the reconstructed dataset to create an animation that shows the evolution of our system. We underline that you need ffmpeg installed in order to see the video.
 
-# In[ ]:
+# In[7]:
 
 
 fig = plt.figure()

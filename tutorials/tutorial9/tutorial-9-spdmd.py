@@ -4,8 +4,8 @@
 # # Sparsity-Promoting Dynamic Mode Decomposition
 # In this tutorial we present a variant of DMD called *Sparsity-Promoting* DMD. The algorithm differs from the original one in the way it computes DMD modes amplitudes, since SpDMD "promotes" combinations of amplitudes with an high number of amplitudes set to 0. Such a quality of DMD amplitudes (and of matrix in general) is called *sparsity*. The parameter $\gamma$ controls how much sparsity is promoted.
 #
-# SpDMD has been presented in *Sparsity-promoting dynamic mode decomposition* by *Jovanovic* et al. The algorithm uses ADMM (check *Distributed optimization and statistical learning via the alternating
-# direction method of multipliers* by *Boyd* et al), an iterative algorithm used to solve optimization problems.
+# SpDMD has been presented in *Sparsity-promoting dynamic mode decomposition*, (https://doi.org/10.1063/1.4863670). The algorithm uses ADMM (see *Distributed optimization and statistical learning via the alternating
+# direction method of multipliers*, http://dx.doi.org/10.1561/2200000016), an iterative algorithm used to solve optimization problems.
 #
 # First of all, we import the modules needed for this tutorial.
 
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # We consider several values of the parameter $\gamma$ in order to check how it affects the result:
 
-# In[49]:
+# In[2]:
 
 
 gammas = [1.0e-3, 2, 10, 20, 30, 50, 100, 1000]
@@ -29,16 +29,16 @@ gammas = [1.0e-3, 2, 10, 20, 30, 50, 100, 1000]
 #
 # We now load a dataset related to an heat conductivity problem:
 
-# In[37]:
+# In[3]:
 
 
-X = np.load("data/heat_90.npy")
+X = np.load("../data/heat_90.npy")
 X.shape
 
 
 # We use the dataset to train several instances of SpDMD (one for each $\gamma$ taken into account). We also create an instance of standard DMD for comparison:
 
-# In[63]:
+# In[4]:
 
 
 spdmd_list = [SpDMD(svd_rank=30, gamma=gm, rho=1.0e4).fit(X) for gm in gammas]
@@ -47,15 +47,15 @@ std_dmd = DMD(svd_rank=30).fit(X)
 
 # As you can see each call to the method `SpDMD.fit()` prints the number of iterations of ADMM. You can suppress this output passing the flag `verbose=False` to the constructor of the class `SpDMD`:
 
-# In[68]:
+# In[5]:
 
 
 SpDMD(svd_rank=30, gamma=10, rho=1.0e2, verbose=False).fit(X)
 
 
-# You can control the number of iterations with the parameter `rho` of the constructor of the class `SpDMD`. The optimal value for this parameter may differ for different problems:
+# You can control the number of iterations with the parameter `rho` of the constructor of the class `SpDMD`. The optimal value for this parameter may differ for different problems (reference: https://doi.org/10.3182/20120914-2-US-4030.00038).
 
-# In[69]:
+# In[6]:
 
 
 SpDMD(svd_rank=30, gamma=10, rho=1.0e4).fit(X)
@@ -67,7 +67,7 @@ SpDMD(svd_rank=30, gamma=10, rho=1).fit(X)
 # ## Sparsity-promoting amplitudes
 # We now examine the results of the experiment initialized above. First of all we plot the number of non-zero amplitudes in the algorithm as $\gamma$ increases. As you can see an high value of $\gamma$ "breaks" the algorithm, in the sense that all the DMD amplitudes are set to 0. By contrast, for low values of $\gamma$ SpDMD converges to standard DMD (all amplitudes are non-zero).
 
-# In[65]:
+# In[7]:
 
 
 plt.figure(figsize=(20, 5))
@@ -86,7 +86,7 @@ plt.show()
 
 # In order to visualize the situation we plot the DMD ampltiudes for the tested values of $\gamma$.
 
-# In[66]:
+# In[8]:
 
 
 # plot amplitudes
@@ -106,7 +106,7 @@ plt.show()
 # ## Reconstruction and pointwise error
 # We use the instances of `SpDMD` and `DMD` constructed above to reconstruct the dataset for a particular time instance. Then, we evaluate the pointwise error for that time instance, and we compare the results for different values of $\gamma$.
 
-# In[60]:
+# In[9]:
 
 
 time = 2
@@ -130,7 +130,7 @@ plt.title("Standard DMD")
 plt.show()
 
 
-# In[61]:
+# In[10]:
 
 
 time = 2
@@ -165,7 +165,7 @@ plt.show()
 
 # To end the comparison, we plot alongside the evolution of the absolute error (see the code below for our implementation of the function `absolute_error`) for the tested values of $\gamma$.
 
-# In[62]:
+# In[11]:
 
 
 def relative_error(got, expected):
