@@ -120,7 +120,7 @@ plt.show()
 #
 # We can check what happens  if we add some noise.
 
-# In[10]:
+# In[9]:
 
 
 noise_range = [0.01, 0.05, 0.1, 0.2]
